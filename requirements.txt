@@ -1,0 +1,11 @@
+fastapi
+uvicorn[standard]
+langchain-core==1.6.6
+langchain-anthropic==1.7.5
+langgraph==1.2.13
+aiosqlite
+httpx
+beautifulsoup4
+python-dotenv
+pytest
+pytest-asyncio
