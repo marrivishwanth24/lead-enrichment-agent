@@ -1,0 +1,402 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lead Enrichment Agent</title>
+<meta name="description" content="Enrich, qualify, draft, and grade outbound leads — watch the pipeline run live.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;500;600;700;800&family=Lexend:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0E0C0A;--bg2:#141210;--card:#191613;--card-hover:#1F1B17;
+  --amber:#FF8A3D;--amber2:#E8732A;--amber-glow:rgba(255,138,61,0.08);
+  --green:#3DDC8A;--green-tint:rgba(61,220,138,0.1);
+  --red:#FF6B5E;--red-tint:rgba(255,107,94,0.1);
+  --text:#F5EFE8;--text2:#B8ADA0;--muted:#6E6358;
+  --border:rgba(255,138,61,0.14);--border2:rgba(245,239,232,0.08);
+  --display:'Bricolage Grotesque',sans-serif;--body:'Lexend',sans-serif;--mono:'JetBrains Mono',monospace;
+}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:var(--body);font-size:15px;line-height:1.6;min-height:100vh}
+body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(circle at 15% 10%,rgba(255,138,61,0.05),transparent 45%),radial-gradient(circle at 85% 90%,rgba(61,220,138,0.04),transparent 40%);pointer-events:none;z-index:0}
+::-webkit-scrollbar{width:4px;height:4px}::-webkit-scrollbar-track{background:var(--bg)}::-webkit-scrollbar-thumb{background:var(--amber2);border-radius:2px}
+
+.wrap{max-width:860px;margin:0 auto;padding:48px 24px 100px;position:relative;z-index:1}
+
+header{display:flex;justify-content:space-between;align-items:flex-start;gap:20px;margin-bottom:40px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:12px}
+.brand-mark{width:38px;height:38px;border-radius:9px;background:linear-gradient(135deg,var(--amber),var(--amber2));display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0;box-shadow:0 4px 16px rgba(255,138,61,0.25)}
+h1{font-family:var(--display);font-size:21px;font-weight:700;letter-spacing:-0.01em}
+.tagline{font-family:var(--mono);font-size:11px;color:var(--muted);letter-spacing:0.03em;margin-top:2px}
+.status-pill{font-family:var(--mono);font-size:11px;color:var(--green);display:flex;align-items:center;gap:6px;padding:7px 12px;border:1px solid var(--border2);border-radius:100px;background:var(--card)}
+.pulse{width:6px;height:6px;border-radius:50%;background:var(--green);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
+
+section{margin-bottom:28px}
+.card{background:var(--card);border:1px solid var(--border2);border-radius:14px;padding:26px}
+.section-label{font-family:var(--mono);font-size:11px;letter-spacing:0.09em;text-transform:uppercase;color:var(--muted);margin-bottom:14px;display:flex;align-items:center;gap:10px}
+.section-label .count{color:var(--amber);background:var(--amber-glow);padding:1px 7px;border-radius:5px;font-size:10.5px}
+
+/* ---- submit form ---- */
+.submit-row{display:flex;gap:10px;flex-wrap:wrap}
+.field{flex:1;min-width:180px}
+label{display:block;font-family:var(--mono);font-size:10.5px;letter-spacing:0.06em;text-transform:uppercase;color:var(--muted);margin-bottom:7px}
+input[type=text]{width:100%;background:var(--bg2);border:1px solid var(--border2);border-radius:9px;padding:12px 14px;color:var(--text);font-family:var(--body);font-size:14px;transition:border-color .15s}
+input[type=text]:focus{outline:none;border-color:var(--amber)}
+input[type=text]::placeholder{color:var(--muted)}
+.btn{font-family:var(--body);font-weight:600;font-size:14px;padding:12px 22px;border-radius:9px;border:none;cursor:pointer;transition:all .15s;white-space:nowrap}
+.btn-primary{background:var(--amber);color:#1A0E04}
+.btn-primary:hover{background:#FFA05F;transform:translateY(-1px)}
+.btn-primary:disabled{opacity:0.5;cursor:not-allowed;transform:none}
+.btn-ghost{background:transparent;border:1px solid var(--border2);color:var(--text2)}
+.btn-ghost:hover{border-color:var(--text2);color:var(--text)}
+.btn-approve{background:var(--green);color:#06291A}
+.btn-approve:hover{background:#56E8A0}
+.btn-reject{background:transparent;border:1px solid var(--red);color:var(--red)}
+.btn-reject:hover{background:var(--red-tint)}
+.form-hint{font-size:12.5px;color:var(--muted);margin-top:10px}
+
+/* ---- pipeline tracker ---- */
+.tracker{display:none}
+.tracker.active{display:block}
+.tracker-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:22px}
+.tracker-company{font-family:var(--display);font-size:17px;font-weight:600}
+.tracker-domain{font-family:var(--mono);font-size:12px;color:var(--muted)}
+.steps{display:flex;gap:8px;margin-bottom:4px}
+.step{flex:1;display:flex;flex-direction:column;align-items:center;gap:8px;position:relative}
+.step-bar{width:100%;height:3px;border-radius:2px;background:var(--border2);overflow:hidden}
+.step-bar-fill{height:100%;width:0%;background:var(--amber);transition:width .4s ease}
+.step.done .step-bar-fill{width:100%;background:var(--green)}
+.step.active .step-bar-fill{width:60%;background:var(--amber);animation:fillpulse 1.2s ease-in-out infinite}
+.step.failed .step-bar-fill{width:100%;background:var(--red)}
+@keyframes fillpulse{0%,100%{opacity:1}50%{opacity:0.55}}
+.step-label{font-family:var(--mono);font-size:10.5px;letter-spacing:0.04em;color:var(--muted);text-transform:uppercase}
+.step.active .step-label{color:var(--amber)}
+.step.done .step-label{color:var(--green)}
+.step.failed .step-label{color:var(--red)}
+.tracker-outcome{margin-top:20px;padding-top:18px;border-top:1px dashed var(--border2);font-size:13.5px;color:var(--text2);display:none}
+.tracker-outcome.show{display:block}
+
+/* ---- badges ---- */
+.badge{font-family:var(--mono);font-size:10.5px;letter-spacing:0.04em;text-transform:uppercase;padding:4px 10px;border-radius:100px;display:inline-flex;align-items:center;gap:5px;white-space:nowrap}
+.badge-pending{color:var(--amber);background:var(--amber-glow)}
+.badge-success{color:var(--green);background:var(--green-tint)}
+.badge-fail{color:var(--red);background:var(--red-tint)}
+.badge-neutral{color:var(--text2);background:var(--border2)}
+
+/* ---- result detail ---- */
+.result{display:none;margin-top:18px;padding-top:18px;border-top:1px dashed var(--border2)}
+.result.show{display:block}
+.result-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:18px}
+@media(max-width:600px){.result-grid{grid-template-columns:1fr}}
+.result-block h4{font-family:var(--mono);font-size:10.5px;letter-spacing:0.06em;text-transform:uppercase;color:var(--muted);margin-bottom:8px}
+.result-block p{font-size:13.5px;color:var(--text2);line-height:1.6}
+.signals{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.signal-chip{font-size:11.5px;background:var(--bg2);border:1px solid var(--border2);padding:4px 9px;border-radius:6px;color:var(--text2)}
+.email-card{background:var(--bg2);border:1px solid var(--border2);border-radius:10px;padding:18px;margin-top:4px}
+.email-subject{font-weight:600;font-size:14.5px;margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid var(--border2)}
+.email-body{font-size:13.5px;color:var(--text2);line-height:1.7;white-space:pre-wrap}
+.grade-row{display:flex;gap:16px;margin-top:14px;flex-wrap:wrap}
+.grade-check{display:flex;align-items:center;gap:7px;font-size:12.5px}
+.grade-notes{font-size:12.5px;color:var(--muted);margin-top:8px;font-style:italic}
+
+/* ---- queue / history list ---- */
+.lead-item{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:16px 0;border-bottom:1px solid var(--border2)}
+.lead-item:last-child{border-bottom:none}
+.lead-main{flex:1;min-width:0}
+.lead-name{font-weight:600;font-size:14px;margin-bottom:3px}
+.lead-sub{font-family:var(--mono);font-size:11.5px;color:var(--muted)}
+.lead-actions{display:flex;gap:8px;align-items:center;flex-shrink:0}
+.lead-reason{font-size:12.5px;color:var(--text2);margin-top:6px;max-width:460px}
+.empty{color:var(--muted);font-size:13px;padding:20px 0;text-align:center}
+
+footer{text-align:center;margin-top:50px;font-family:var(--mono);font-size:11px;color:var(--muted)}
+footer a{color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="brand">
+      <div class="brand-mark">◎</div>
+      <div>
+        <h1>Lead Enrichment Agent</h1>
+        <div class="tagline">enrich &middot; qualify &middot; draft &middot; grade &middot; review</div>
+      </div>
+    </div>
+    <div class="status-pill"><span class="pulse"></span>worker online</div>
+  </header>
+
+  <section class="card">
+    <div class="section-label">Submit a lead</div>
+    <div class="submit-row">
+      <div class="field">
+        <label>Company name</label>
+        <input type="text" id="companyName" placeholder="Acme Corp" />
+      </div>
+      <div class="field">
+        <label>Domain</label>
+        <input type="text" id="domain" placeholder="acme.com" />
+      </div>
+      <div style="display:flex;align-items:flex-end">
+        <button class="btn btn-primary" id="submitBtn" onclick="submitLead()">Run agent →</button>
+      </div>
+    </div>
+    <div class="form-hint">Fetches the company's public site, qualifies it against the configured ICP, and — if it fits — drafts and grades an outbound email. Nothing is ever sent automatically.</div>
+  </section>
+
+  <section class="card tracker" id="tracker">
+    <div class="tracker-head">
+      <div>
+        <div class="tracker-company" id="trackerCompany">—</div>
+        <div class="tracker-domain" id="trackerDomain">—</div>
+      </div>
+      <div class="badge badge-pending" id="trackerBadge">Running</div>
+    </div>
+    <div class="steps" id="steps">
+      <div class="step" data-step="enrich"><div class="step-bar"><div class="step-bar-fill"></div></div><div class="step-label">Enrich</div></div>
+      <div class="step" data-step="qualify"><div class="step-bar"><div class="step-bar-fill"></div></div><div class="step-label">Qualify</div></div>
+      <div class="step" data-step="draft"><div class="step-bar"><div class="step-bar-fill"></div></div><div class="step-label">Draft</div></div>
+      <div class="step" data-step="grade"><div class="step-bar"><div class="step-bar-fill"></div></div><div class="step-label">Grade</div></div>
+    </div>
+    <div class="tracker-outcome" id="trackerOutcome"></div>
+    <div class="result" id="result"></div>
+  </section>
+
+  <section class="card">
+    <div class="section-label">Review queue <span class="count" id="queueCount">0</span></div>
+    <div id="queueList"><div class="empty">No drafts waiting for review.</div></div>
+  </section>
+
+  <section class="card">
+    <div class="section-label">Recent leads</div>
+    <div id="historyList"><div class="empty">Nothing submitted yet.</div></div>
+  </section>
+
+  <footer>Lead Enrichment Agent &middot; <a href="/docs">API docs</a> &middot; <a href="https://github.com/marrivishwanth24/lead-enrichment-agent" target="_blank" rel="noopener">source</a></footer>
+</div>
+
+<script>
+const STEP_ORDER = ['enrich', 'qualify', 'draft', 'grade'];
+const STATUS_TO_STEP = {
+  pending: -1, enriching: 0, qualifying: 1, drafting: 2, grading: 3,
+};
+const TERMINAL = new Set(['disqualified', 'pending_approval', 'flagged_for_review', 'approved', 'rejected', 'failed']);
+
+let pollTimer = null;
+
+async function submitLead() {
+  const company_name = document.getElementById('companyName').value.trim();
+  const domain = document.getElementById('domain').value.trim();
+  if (!company_name || !domain) return;
+
+  const btn = document.getElementById('submitBtn');
+  btn.disabled = true; btn.textContent = 'Submitting…';
+
+  try {
+    const res = await fetch('/leads', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ company_name, domain }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || 'Submit failed');
+
+    document.getElementById('tracker').classList.add('active');
+    document.getElementById('trackerCompany').textContent = company_name;
+    document.getElementById('trackerDomain').textContent = domain;
+    document.getElementById('result').classList.remove('show');
+    document.getElementById('trackerOutcome').classList.remove('show');
+    resetSteps();
+    document.getElementById('tracker').scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+    if (pollTimer) clearInterval(pollTimer);
+    pollLead(data.id);
+    pollTimer = setInterval(() => pollLead(data.id), 1500);
+  } catch (e) {
+    alert('Could not submit: ' + e.message);
+  } finally {
+    btn.disabled = false; btn.textContent = 'Run agent →';
+  }
+}
+
+function resetSteps() {
+  document.querySelectorAll('.step').forEach(s => s.classList.remove('active', 'done', 'failed'));
+}
+
+function updateSteps(status) {
+  resetSteps();
+  const currentIdx = STATUS_TO_STEP[status];
+  const stepsEls = document.querySelectorAll('.step');
+
+  if (status === 'disqualified') {
+    stepsEls[0].classList.add('done');
+    stepsEls[1].classList.add('done');
+    return;
+  }
+  if (['pending_approval', 'flagged_for_review', 'approved', 'rejected'].includes(status)) {
+    stepsEls.forEach(s => s.classList.add('done'));
+    return;
+  }
+  if (status === 'failed') {
+    const idx = currentIdx >= 0 ? currentIdx : 0;
+    stepsEls.forEach((s, i) => { if (i < idx) s.classList.add('done'); });
+    stepsEls[idx].classList.add('failed');
+    return;
+  }
+  // in-progress
+  stepsEls.forEach((s, i) => {
+    if (i < currentIdx) s.classList.add('done');
+    else if (i === currentIdx) s.classList.add('active');
+  });
+}
+
+function badgeFor(status) {
+  const map = {
+    pending_approval: ['badge-success', 'Ready for review'],
+    approved: ['badge-success', 'Approved'],
+    flagged_for_review: ['badge-fail', 'Flagged — review carefully'],
+    disqualified: ['badge-neutral', 'Disqualified'],
+    rejected: ['badge-neutral', 'Rejected'],
+    failed: ['badge-fail', 'Failed'],
+  };
+  return map[status] || ['badge-pending', 'Running…'];
+}
+
+function renderResult(lead) {
+  const el = document.getElementById('result');
+  let summary = {};
+  try { summary = JSON.parse(lead.enrichment_summary || '{}'); } catch (e) {}
+
+  let html = '';
+  if (summary.what_they_do) {
+    html += `<div class="result-grid">
+      <div class="result-block"><h4>What they do</h4><p>${esc(summary.what_they_do)}</p></div>
+      <div class="result-block"><h4>Qualification</h4><p>${esc(lead.qualification_reason || '—')}</p>
+        ${summary.signals ? `<div class="signals">${summary.signals.map(s => `<span class="signal-chip">${esc(s)}</span>`).join('')}</div>` : ''}
+      </div>
+    </div>`;
+  }
+
+  if (lead.draft_subject) {
+    html += `<div class="result-block">
+      <h4>Drafted outreach</h4>
+      <div class="email-card">
+        <div class="email-subject">${esc(lead.draft_subject)}</div>
+        <div class="email-body">${esc(lead.draft_body)}</div>
+      </div>
+      <div class="grade-row">
+        <div class="grade-check">${lead.grading_grounded ? '✓' : '✗'} Grounded in real facts</div>
+        <div class="grade-check">${lead.grading_personalized ? '✓' : '✗'} Genuinely personalized</div>
+      </div>
+      ${lead.grading_notes ? `<div class="grade-notes">${esc(lead.grading_notes)}</div>` : ''}
+    </div>`;
+  }
+
+  if (lead.error) {
+    html += `<div class="result-block"><h4>Error</h4><p style="color:var(--red)">${esc(lead.error)}</p></div>`;
+  }
+
+  el.innerHTML = html;
+  el.classList.toggle('show', !!html);
+}
+
+async function pollLead(id) {
+  const res = await fetch(`/leads/${id}`);
+  if (!res.ok) return;
+  const lead = await res.json();
+
+  updateSteps(lead.status);
+  const [cls, label] = badgeFor(lead.status);
+  const badge = document.getElementById('trackerBadge');
+  badge.className = 'badge ' + cls;
+  badge.textContent = label;
+
+  const outcome = document.getElementById('trackerOutcome');
+  if (lead.status === 'disqualified') {
+    outcome.textContent = lead.qualification_reason || 'This lead did not fit the ICP.';
+    outcome.classList.add('show');
+  }
+
+  if (TERMINAL.has(lead.status)) {
+    renderResult(lead);
+    clearInterval(pollTimer);
+    loadQueue();
+    loadHistory();
+  }
+}
+
+function esc(s) {
+  const d = document.createElement('div');
+  d.textContent = s == null ? '' : String(s);
+  return d.innerHTML;
+}
+
+async function loadQueue() {
+  const res = await fetch('/leads');
+  if (!res.ok) return;
+  const all = await res.json();
+  const queue = all.filter(l => l.status === 'pending_approval' || l.status === 'flagged_for_review');
+
+  document.getElementById('queueCount').textContent = queue.length;
+  const el = document.getElementById('queueList');
+
+  if (!queue.length) {
+    el.innerHTML = '<div class="empty">No drafts waiting for review.</div>';
+    return;
+  }
+
+  el.innerHTML = queue.map(lead => {
+    const flagged = lead.status === 'flagged_for_review';
+    return `<div class="lead-item">
+      <div class="lead-main">
+        <div class="lead-name">${esc(lead.company_name)} ${flagged ? '<span class="badge badge-fail" style="margin-left:6px">flagged</span>' : ''}</div>
+        <div class="lead-sub">${esc(lead.domain)} &middot; "${esc(lead.draft_subject || '')}"</div>
+        ${flagged ? `<div class="lead-reason">${esc(lead.grading_notes || '')}</div>` : ''}
+      </div>
+      <div class="lead-actions">
+        <button class="btn btn-reject" onclick="actOnLead(${lead.id}, 'reject')">Reject</button>
+        <button class="btn btn-approve" onclick="actOnLead(${lead.id}, 'approve')">Approve</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function actOnLead(id, action) {
+  await fetch(`/leads/${id}/${action}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
+  loadQueue();
+  loadHistory();
+}
+
+async function loadHistory() {
+  const res = await fetch('/leads');
+  if (!res.ok) return;
+  const all = await res.json();
+  const el = document.getElementById('historyList');
+
+  if (!all.length) {
+    el.innerHTML = '<div class="empty">Nothing submitted yet.</div>';
+    return;
+  }
+
+  el.innerHTML = all.slice(0, 15).map(lead => {
+    const [cls, label] = badgeFor(lead.status);
+    return `<div class="lead-item">
+      <div class="lead-main">
+        <div class="lead-name">${esc(lead.company_name)}</div>
+        <div class="lead-sub">${esc(lead.domain)}</div>
+      </div>
+      <span class="badge ${cls}">${label}</span>
+    </div>`;
+  }).join('');
+}
+
+loadQueue();
+loadHistory();
+setInterval(loadQueue, 8000);
+setInterval(loadHistory, 8000);
+</script>
+</body>
+</html>

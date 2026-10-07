@@ -11,7 +11,21 @@ import asyncio
 import logging
 from contextlib import asynccontextmanager
 
+from dotenv import load_dotenv
+
+# Must run before any `from app...` import below -- pipeline.py constructs
+# its ChatAnthropic clients at module import time, and that construction
+# resolves ANTHROPIC_API_KEY from the environment immediately. Loading .env
+# after that import would be too late: the key would already be missing.
+# Railway/production isn't affected (env vars are injected into the process
+# directly, no .env file involved), but any local `uvicorn app.main:app`
+# run was silently broken without this -- found by actually running it
+# locally, not assumed safe because production worked.
+load_dotenv()
+
 from fastapi import FastAPI, HTTPException
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 from app import db
@@ -37,6 +51,8 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="Lead Enrichment Agent", lifespan=lifespan)
 
+app.mount("/static", StaticFiles(directory="static"), name="static")
+
 
 class NewLead(BaseModel):
     company_name: str
@@ -45,6 +61,11 @@ class NewLead(BaseModel):
 
 class RejectBody(BaseModel):
     reason: str | None = None
+
+
+@app.get("/")
+async def dashboard():
+    return FileResponse("static/index.html")
 
 
 @app.get("/health")
